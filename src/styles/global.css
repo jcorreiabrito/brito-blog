@@ -117,7 +117,7 @@ a:hover {
   margin: 0 auto;
 }
 
-header {
+.site-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -138,6 +138,40 @@ header {
   text-decoration: none;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.social-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.social-icons a {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.social-icons a:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.social-icons svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 footer {
   margin-top: 6rem;
   padding-top: 2rem;
@@ -146,6 +180,26 @@ footer {
   color: var(--text-secondary);
   text-align: center;
   transition: var(--transition-theme);
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.footer-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+.footer-links .separator {
+  color: var(--border-color);
 }
 
 /* Blog list styles */
@@ -193,16 +247,40 @@ footer {
 
 /* Post view styling */
 .post-header {
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+  transition: var(--transition-theme);
 }
 
 .post-header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  margin-top: 0;
   margin-bottom: 0.75rem;
+  line-height: 1.15;
 }
 
-.post-header-meta {
+@media (min-width: 640px) {
+  .post-header h1 {
+    font-size: 2.85rem;
+  }
+}
+
+.post-header .post-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: var(--text-secondary);
   font-size: 0.95rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.post-header .post-meta .separator {
+  color: var(--border-color);
+  margin: 0 0.25rem;
 }
 
 .back-link {

@@ -26,9 +26,12 @@ const formattedDate = new Date(frontmatter.pubDate).toLocaleDateString('en-US', 
     </a>
     
     <header class="post-header">
-      <p class="post-meta">Published on {formattedDate}</p>
       <h1>{frontmatter.title}</h1>
-      {frontmatter.author && <p class="post-meta" style="text-transform: none; margin-top: 0.25rem;">By {frontmatter.author}</p>}
+      <div class="post-meta">
+        <span>By {frontmatter.author || "João Brito"}</span>
+        <span class="separator">•</span>
+        <time datetime={frontmatter.pubDate}>{formattedDate}</time>
+      </div>
     </header>
 
     <div class="content">

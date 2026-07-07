@@ -1,0 +1,440 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><meta name="generator" content="Astro v4.16.19"><!-- SEO Meta Tags --><title>Building my home server: from native chaos to a dockerized media empire</title><meta name="description" content="A self-hosted media stack is less about the content it serves and more about the containerization, networking, and automation patterns you are forced to get right."><meta name="author" content="Writer"><meta property="og:title" content="Building my home server: from native chaos to a dockerized media empire"><meta property="og:description" content="A self-hosted media stack is less about the content it serves and more about the containerization, networking, and automation patterns you are forced to get right."><meta property="og:type" content="website"><!-- Critical inline script to prevent theme flash --><script>
+      const getTheme = () => {
+        if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+          return localStorage.getItem('theme');
+        }
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      };
+      document.documentElement.setAttribute('data-theme', getTheme());
+    </script><link rel="stylesheet" href="/_astro/about.CgRoI2gf.css"><script type="module">function n(){const e=document.getElementById("theme-toggle");e&&e.addEventListener("click",()=>{const t=(document.documentElement.getAttribute("data-theme")||"light")==="dark"?"light":"dark";document.documentElement.setAttribute("data-theme",t),localStorage.setItem("theme",t)})}n();document.addEventListener("astro:after-swap",n);
+</script></head> <body> <div class="container"> <header class="site-header"> <div class="header-left"> <a href="/about" class="logo" id="home-link">João Brito</a> <div class="social-icons"> <a href="https://github.com/jcorreiabrito" target="_blank" rel="noopener noreferrer" aria-label="GitHub" id="header-github"> <svg viewBox="0 0 24 24"> <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path> </svg> </a> <a href="https://www.linkedin.com/in/britojoao" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" id="header-linkedin"> <svg viewBox="0 0 24 24"> <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path> <rect x="2" y="9" width="4" height="12"></rect> <circle cx="4" cy="4" r="2"></circle> </svg> </a> </div> </div> <button id="theme-toggle" class="theme-btn" aria-label="Toggle theme"> <!-- Sun Icon (shown in dark mode) --> <svg class="sun" viewBox="0 0 24 24"> <circle cx="12" cy="12" r="4"></circle> <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path> </svg> <!-- Moon Icon (shown in light mode) --> <svg class="moon" viewBox="0 0 24 24"> <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path> </svg> </button>  </header> <main>  <article> <a href="/" class="back-link" id="back-home-link"> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m15 18-6-6 6-6"></path> </svg>
+Back to Home
+</a> <header class="post-header"> <h1>Building my home server: from native chaos to a dockerized media empire</h1> <div class="post-meta"> <span>By João Brito</span> <span class="separator">•</span> <time datetime="2026-07-07T00:00:00.000Z">July 6, 2026</time> </div> </header> <div class="content"> <p>There’s a moment every tinkerer knows well. You’re paying for three streaming services, still can’t find what you want to watch, and you think: <em>“How hard can it be to just… host my own?”</em></p>
+<p>Spoiler: it’s both easier and harder than you think. This is the full story, starting from running everything natively as bare binaries, hitting the walls that made me rethink everything, and ending with a fully containerized, self-maintaining media stack that mostly runs itself.</p>
+<hr>
+<h2 id="chapter-1-the-native-era-before-docker">Chapter 1: the native era (before Docker)</h2>
+<p>Before a single Docker container was ever pulled, the stack was running the old-fashioned way: binaries installed directly on the host, systemd services keeping them alive, configs scattered across the filesystem.</p>
+<p>The evidence is still on disk. <code>/opt/Sonarr</code> is a full .NET runtime installation: <code>libcoreclr.so</code>, <code>libclrjit.so</code>, ASP.NET assemblies, <code>ffprobe</code>, roughly 430 files sitting directly on the filesystem:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/opt/Sonarr/</span></span>
+<span class="line"><span>├── Sonarr              # The actual binary</span></span>
+<span class="line"><span>├── Sonarr.Core.dll     # Core logic</span></span>
+<span class="line"><span>├── ffprobe             # Media probe tool</span></span>
+<span class="line"><span>├── libcoreclr.so       # .NET runtime</span></span>
+<span class="line"><span>├── libclrjit.so        # JIT compiler</span></span>
+<span class="line"><span>├── ServiceInstall      # systemd service installer</span></span>
+<span class="line"><span>├── ServiceUninstall</span></span>
+<span class="line"><span>└── ...430 more files</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>You’d install it like this:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:var(--astro-code-token-comment)"># The classic "just run the binary" approach</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">cd</span><span style="color:var(--astro-code-token-string)"> /opt/Sonarr</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">sudo</span><span style="color:var(--astro-code-token-string)"> ./ServiceInstall</span><span style="color:var(--astro-code-token-comment)">   # registers a systemd service</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">sudo</span><span style="color:var(--astro-code-token-string)"> systemctl</span><span style="color:var(--astro-code-token-string)"> enable</span><span style="color:var(--astro-code-token-string)"> --now</span><span style="color:var(--astro-code-token-string)"> sonarr</span></span>
+<span class="line"></span></code></pre>
+<p>Sonarr’s config lived at <code>~/.config/Sonarr/</code>, the standard XDG path that native Linux apps use. Same story for Prowlarr at <code>~/.config/Prowlarr/</code>. Jellyfin was even installed as a Flatpak, sandboxed under:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/home/brito/.var/app/org.jellyfin.JellyfinServer/</span></span>
+<span class="line"><span>├── data/</span></span>
+<span class="line"><span>├── config/</span></span>
+<span class="line"><span>└── cache/</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>On the surface, this works. Each service runs as a systemd unit, starts on boot, restarts on crash. For a while, it’s fine.</p>
+<h3 id="the-pain-points-that-broke-the-native-setup">The pain points that broke the native setup</h3>
+<p>Then reality sets in.</p>
+<p><strong>Dependency drift.</strong> Each .NET app ships its own runtime. Sonarr bundles .NET 8, Radarr bundles a slightly different build, Bazarr runs on Python with its own virtualenv. There’s no shared ground. Updating one sometimes breaks shared system libraries.</p>
+<p><strong>Networking is manual.</strong> Every service is on <code>localhost</code>. Sonarr connects to qBittorrent at <code>127.0.0.1:8081</code>. Radarr connects to Prowlarr at <code>127.0.0.1:9696</code>. If a port changes, you update every app that depends on it by hand, through each app’s web UI.</p>
+<p><strong>No isolation.</strong> A misbehaving service can eat CPU or open file handles without bounds. There’s no <code>--memory</code> limit, no cgroup constraints. One runaway process is everyone’s problem.</p>
+<p><strong>Reproducibility is zero.</strong> “Works on my machine” is the entire deployment strategy. There’s no way to describe the full setup in a file and rebuild it from scratch in 30 seconds.</p>
+<p>The breaking point for me was a Sonarr update that required a newer glibc than what the system had. I could either upgrade the OS (risky), hold the package version forever (messy), or find a better way.</p>
+<p>Docker was the better way.</p>
+<hr>
+<h2 id="chapter-2-the-migration-to-docker">Chapter 2: the migration to Docker</h2>
+<p>Migrating to Docker is not just “put a container around it.” The data is what matters: configs, databases, watch histories. Get that wrong and you’re starting from scratch.</p>
+<h3 id="the-migration-strategy-lift-the-config-not-the-binary">The migration strategy: lift the config, not the binary</h3>
+<p>The key insight is that <code>*arr</code> apps store all their state in a SQLite database and a handful of config files. The binary is stateless. The <code>/config</code> directory holds everything.</p>
+<p>For Sonarr and Prowlarr, the native configs were already sitting at <code>~/.config/Sonarr</code> and <code>~/.config/Prowlarr</code>. The Docker migration just pointed the container volumes at those exact same paths:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-comment)"># The Docker container reads the SAME config the native app wrote</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">sonarr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> lscr.io/linuxserver/sonarr:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.config/Sonarr:/config:z</span><span style="color:var(--astro-code-token-comment)">  # same path as native</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Series:/media/series:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Downloads:/downloads:z</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">prowlarr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> lscr.io/linuxserver/prowlarr:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.config/Prowlarr:/config:z</span><span style="color:var(--astro-code-token-comment)">  # same path as native</span></span>
+<span class="line"></span></code></pre>
+<p>This meant zero data loss and zero reconfiguration. Sonarr Docker booted up, found its existing SQLite database, and picked up exactly where the native install left off: all series tracked, all history intact, all quality profiles preserved.</p>
+<p>For Jellyfin, same story. The Flatpak stored data under <code>~/.var/app/org.jellyfin.JellyfinServer/</code>. The Docker container mounts those exact paths:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">jellyfin</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.var/app/org.jellyfin.JellyfinServer/data:/data:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.var/app/org.jellyfin.JellyfinServer/config:/config:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.var/app/org.jellyfin.JellyfinServer/cache:/cache:z</span></span>
+<span class="line"></span></code></pre>
+<p>Watch history, user accounts, library scans: everything survived the migration.</p>
+<h3 id="stopping-the-native-services">Stopping the native services</h3>
+<p>Once the Docker containers were validated and running, the native services had to be stopped and disabled to avoid port conflicts:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:var(--astro-code-token-comment)"># Stop and disable native systemd services</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">sudo</span><span style="color:var(--astro-code-token-string)"> systemctl</span><span style="color:var(--astro-code-token-string)"> stop</span><span style="color:var(--astro-code-token-string)"> sonarr</span><span style="color:var(--astro-code-token-string)"> radarr</span><span style="color:var(--astro-code-token-string)"> prowlarr</span><span style="color:var(--astro-code-token-string)"> bazarr</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">sudo</span><span style="color:var(--astro-code-token-string)"> systemctl</span><span style="color:var(--astro-code-token-string)"> disable</span><span style="color:var(--astro-code-token-string)"> sonarr</span><span style="color:var(--astro-code-token-string)"> radarr</span><span style="color:var(--astro-code-token-string)"> prowlarr</span><span style="color:var(--astro-code-token-string)"> bazarr</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)"># Stop the Flatpak Jellyfin</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">flatpak</span><span style="color:var(--astro-code-token-string)"> kill</span><span style="color:var(--astro-code-token-string)"> org.jellyfin.JellyfinServer</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)"># Confirm ports are free before starting Docker</span></span>
+<span class="line"><span style="color:var(--astro-code-token-function)">sudo</span><span style="color:var(--astro-code-token-string)"> ss</span><span style="color:var(--astro-code-token-string)"> -tlnp</span><span style="color:var(--astro-code-token-keyword)"> |</span><span style="color:var(--astro-code-token-function)"> grep</span><span style="color:var(--astro-code-token-string)"> -E</span><span style="color:var(--astro-code-token-string-expression)"> '8096|8989|7878|9696'</span></span>
+<span class="line"></span></code></pre>
+<p>The critical window: between stopping native services and starting Docker containers, the services are down. Do this during off-hours, not when someone is mid-episode on Jellyfin.</p>
+<h3 id="the-one-thing-that-tripped-me-up-puidpgid">The one thing that tripped me up: PUID/PGID</h3>
+<p>LinuxServer.io images run their internal processes as a specific user inside the container, mapped to a host UID/GID via environment variables:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">environment</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">  - </span><span style="color:var(--astro-code-token-string-expression)">PUID=1000</span><span style="color:var(--astro-code-token-comment)">   # maps to your host user ID</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">  - </span><span style="color:var(--astro-code-token-string-expression)">PGID=1000</span><span style="color:var(--astro-code-token-comment)">   # maps to your host group ID</span></span>
+<span class="line"></span></code></pre>
+<p>The native services ran as your actual user (UID 1000). Docker containers need to match this exactly. Otherwise the container tries to read config files it doesn’t own and fails silently. Running <code>id</code> on the host confirms the right values:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="color:var(--astro-code-token-function)">$</span><span style="color:var(--astro-code-token-string)"> id</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">uid</span><span style="color:var(--astro-code-token-keyword)">=</span><span style="color:var(--astro-code-token-string)">1000</span><span style="color:var(--astro-code-color-text)">(</span><span style="color:var(--astro-code-token-function)">brito</span><span style="color:var(--astro-code-color-text)">) gid</span><span style="color:var(--astro-code-token-keyword)">=</span><span style="color:var(--astro-code-token-string)">1000</span><span style="color:var(--astro-code-color-text)">(</span><span style="color:var(--astro-code-token-function)">brito</span><span style="color:var(--astro-code-color-text)">) groups</span><span style="color:var(--astro-code-token-keyword)">=</span><span style="color:var(--astro-code-token-string)">1000</span><span style="color:var(--astro-code-color-text)">(</span><span style="color:var(--astro-code-token-function)">brito</span><span style="color:var(--astro-code-color-text)">)</span><span style="color:var(--astro-code-token-string)">,...</span></span>
+<span class="line"></span></code></pre>
+<p>Set <code>PUID=1000</code> and <code>PGID=1000</code> everywhere, and volume permission errors disappear.</p>
+<h3 id="what-stayed-native">What stayed native</h3>
+<p>Not everything moved to Docker. AdGuard Home runs with <code>network_mode: host</code>, which is really just Docker using the host network stack directly. It needs port 53 at the OS level, which pure bridge networking can’t reliably provide.</p>
+<p>The old <code>/opt/Sonarr</code> binary directory also still sits on disk, a fossil from the native era. It’s inert with no systemd service pointing to it, but it’s a useful reminder of where the setup started.</p>
+<blockquote>
+<p>The migration preserved 100% of app state by reusing the same config directories, which meant no re-scanning the library, no re-adding indexers, and no re-configuring quality profiles. Docker became a better wrapper around the same data.</p>
+</blockquote>
+<hr>
+<h2 id="the-stack-at-a-glance">The stack at a glance</h2>
+<p>Here’s everything running on the machine under <code>/opt/</code>:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<table><thead><tr><th>Service</th><th>Role</th><th>Port</th></tr></thead><tbody><tr><td><strong>Jellyfin</strong></td><td>Media server (the Netflix alternative)</td><td>8096</td></tr><tr><td><strong>Radarr</strong></td><td>Movie manager &#x26; downloader</td><td>7878</td></tr><tr><td><strong>Sonarr</strong></td><td>TV show manager &#x26; downloader</td><td>8989</td></tr><tr><td><strong>Prowlarr</strong></td><td>Indexer aggregator for *arr apps</td><td>9696</td></tr><tr><td><strong>Bazarr</strong></td><td>Subtitle manager</td><td>6767</td></tr><tr><td><strong>qBittorrent</strong></td><td>Download client</td><td>8081</td></tr><tr><td><strong>Jellyseerr</strong></td><td>Request portal (for the whole family)</td><td>5055</td></tr><tr><td><strong>Maintainerr</strong></td><td>Library cleanup &#x26; rules engine</td><td>6246</td></tr><tr><td><strong>Decluttarr</strong></td><td>Stale download remover (automation)</td><td>internal</td></tr><tr><td><strong>Profilarr</strong></td><td>Quality profile sync &#x26; management</td><td>6869</td></tr><tr><td><strong>AdGuard Home</strong></td><td>Network-wide DNS &#x26; ad blocking</td><td>53/8080</td></tr><tr><td><strong>Caddy</strong></td><td>Reverse proxy with local <code>.lan</code> domains</td><td>80/443</td></tr><tr><td><strong>Portainer</strong></td><td>Docker management UI</td><td>9000</td></tr></tbody></table>
+<p>Everything runs inside Docker, orchestrated by a single <code>compose.yml</code> file.</p>
+<hr>
+<h2 id="the-architecture-one-file-to-rule-them-all">The architecture: one file to rule them all</h2>
+<p>The entire stack lives in <code>/opt/docker/compose.yml</code>. That single file is the source of truth for the whole server. Here’s a representative slice:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-comment)"># =============================================================================</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)"># Full *arr + Media Stack — Docker Compose</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)"># =============================================================================</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)"># Paths:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)">#   Filmes   : /mnt/Acer/jvtri/Videos/Pirataria/Filmes</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)">#   Series   : /mnt/Acer/jvtri/Videos/Pirataria/Series</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)">#   Downloads: /mnt/Acer/jvtri/Videos/Pirataria/Downloads</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">services</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)">  # MEDIA SERVER</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  jellyfin</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> jellyfin/jellyfin:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    container_name</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> jellyfin</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    restart</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> unless-stopped</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    environment</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">TZ=America/Sao_Paulo</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Filmes:/media/filmes:ro,z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Series:/media/series:ro,z</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    ports</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">"8096:8096"</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    networks</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-color-text)"> [</span><span style="color:var(--astro-code-token-string)">arr-net</span><span style="color:var(--astro-code-color-text)">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-comment)">  # DOWNLOAD CLIENT</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  qbittorrent</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> lscr.io/linuxserver/qbittorrent:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    environment</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">PUID=1000</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">PGID=1000</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">TZ=America/Sao_Paulo</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">WEBUI_PORT=8081</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    ports</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">"8081:8081"</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">"58675:58675"</span><span style="color:var(--astro-code-token-comment)">     # Torrent port (TCP)</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">      - </span><span style="color:var(--astro-code-token-string-expression)">"58675:58675/udp"</span><span style="color:var(--astro-code-token-comment)"> # Torrent port (UDP)</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    networks</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-color-text)"> [</span><span style="color:var(--astro-code-token-string)">arr-net</span><span style="color:var(--astro-code-color-text)">]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">networks</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  arr-net</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    driver</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> bridge</span></span>
+<span class="line"></span></code></pre>
+<p>All services share a single internal bridge network called <code>arr-net</code>. This means Sonarr can talk to qBittorrent by container name, not by IP: no hardcoded addresses, no fragile config.</p>
+<blockquote>
+<p>Using a shared Docker network means every <code>*arr</code> service refers to others by name: <code>prowlarr:9696</code>, <code>jellyseerr:5055</code>, etc. Changing a port in one place propagates automatically.</p>
+</blockquote>
+<hr>
+<h2 id="the-arr-ecosystem">The *arr ecosystem</h2>
+<p>If you haven’t heard of the <code>*arr</code> family of apps, here’s the pipeline they form together:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>Request (Jellyseerr)</span></span>
+<span class="line"><span>    ↓</span></span>
+<span class="line"><span>Search (Prowlarr, indexes torrent sites)</span></span>
+<span class="line"><span>    ↓</span></span>
+<span class="line"><span>Download (qBittorrent, actual torrent client)</span></span>
+<span class="line"><span>    ↓</span></span>
+<span class="line"><span>Organize (Radarr / Sonarr, rename, move, tag)</span></span>
+<span class="line"><span>    ↓</span></span>
+<span class="line"><span>Subtitle (Bazarr, auto-fetch subs)</span></span>
+<span class="line"><span>    ↓</span></span>
+<span class="line"><span>Stream (Jellyfin, serve to any device)</span></span>
+<span class="line"><span></span></span></code></pre>
+<h3 id="radarr--sonarr">Radarr &#x26; Sonarr</h3>
+<p>Radarr handles movies, Sonarr handles TV series. Both mount the same <code>/downloads</code> volume as qBittorrent, so they can immediately see finished downloads and hard-link them into the media library:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">radarr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> lscr.io/linuxserver/radarr:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/home/brito/.config/Radarr:/config:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Filmes:/media/filmes:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Downloads:/downloads:z</span></span>
+<span class="line"></span></code></pre>
+<p>Jellyfin mounts the same folder as read-only (<code>ro,z</code>), while Radarr and Sonarr mount it read-write so they can move files around. You don’t want your media server accidentally mangling your files.</p>
+<h3 id="bazarr">Bazarr</h3>
+<p>Nobody talks about Bazarr enough. This service auto-fetches subtitles from providers like OpenSubtitles and Subscene, matching them to your exact video file. It’s the difference between squinting at auto-generated captions and actually understanding what’s happening in a foreign film.</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">bazarr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> lscr.io/linuxserver/bazarr:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/opt/bazarr/data:/config:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Filmes:/media/filmes:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/mnt/Acer/jvtri/Videos/Pirataria/Series:/media/series:z</span></span>
+<span class="line"></span></code></pre>
+<hr>
+<h2 id="caddy--adguard-the-networking-layer">Caddy + AdGuard: the networking layer</h2>
+<p>Instead of typing <code>192.168.1.x:8096</code> to access Jellyfin, I type <code>homeflix.lan</code>. The combination of Caddy and AdGuard Home makes this work on every device on the network.</p>
+<h3 id="caddy-the-reverse-proxy">Caddy: the reverse proxy</h3>
+<p><a href="https://caddyserver.com/">Caddy</a> is a modern web server with automatic HTTPS. For local use, it’s a reverse proxy. The entire routing config fits in a single file:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span># /opt/caddy/Caddyfile</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://requester.lan {</span></span>
+<span class="line"><span>    reverse_proxy jellyseerr:5055</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://homeflix.lan {</span></span>
+<span class="line"><span>    reverse_proxy jellyfin:8096</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://radarr.lan {</span></span>
+<span class="line"><span>    reverse_proxy radarr:7878</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://sonarr.lan {</span></span>
+<span class="line"><span>    reverse_proxy sonarr:8989</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://prowlarr.lan {</span></span>
+<span class="line"><span>    reverse_proxy prowlarr:9696</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://adguard.lan {</span></span>
+<span class="line"><span>    reverse_proxy host.docker.internal:8080</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>http://qbittorrent.lan {</span></span>
+<span class="line"><span>    reverse_proxy qbittorrent:8081</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>Seven lines per service. No Nginx config hell, no SSL certificate juggling.</p>
+<p>Caddy runs inside Docker but AdGuard runs on the host with <code>network_mode: host</code> because DNS port 53 needs real host-level access. The <code>host.docker.internal:host-gateway</code> extra host entry bridges that gap:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">caddy</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  extra_hosts</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"host.docker.internal:host-gateway"</span></span>
+<span class="line"></span></code></pre>
+<h3 id="adguard-home-dns--ad-blocking">AdGuard Home: DNS + ad blocking</h3>
+<p>AdGuard Home runs as a DNS server for the entire local network. Every device uses the server’s IP as its DNS, which means two things: ads are blocked at the DNS level for every device on the LAN (phones, TVs, smart speakers), and <code>homeflix.lan</code> resolves to the server’s IP so the Caddy routes work everywhere.</p>
+<p>Because AdGuard needs real port 53 access, it uses <code>network_mode: host</code>:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">adguardhome</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> adguard/adguardhome:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  network_mode</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> host</span><span style="color:var(--astro-code-token-comment)">   # Required for DNS port 53 to work properly</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/opt/AdGuardHome:/opt/adguardhome/work:z</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/opt/AdGuardHome/data:/opt/adguardhome/conf:z</span></span>
+<span class="line"></span></code></pre>
+<blockquote>
+<p>Setting up DNS rewrites in AdGuard (<code>*.lan</code> pointing to the server IP) combined with Caddy gives every device on the network clean local domain names, without editing hosts files per device.</p>
+</blockquote>
+<hr>
+<h2 id="the-automation-layer-keeping-things-clean">The automation layer: keeping things clean</h2>
+<p>Having a media server is useful. Having one that maintains itself is something else entirely. This is where Decluttarr, Maintainerr, and Profilarr come in.</p>
+<h3 id="decluttarr">Decluttarr</h3>
+<p>Decluttarr monitors qBittorrent and the <code>*arr</code> apps for stale downloads: things stuck in “importing,” failed torrents, orphaned files. It cleans up the queue automatically so it doesn’t fill with junk.</p>
+<p>What’s interesting: Decluttarr’s <code>/opt/decluttarr</code> directory is a full git repository, with a <code>pyproject.toml</code>, <code>ruff.toml</code>, and a local <code>venv</code>. This looks like a locally-cloned or forked version of the project, possibly for staying on a specific version or applying patches.</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/opt/decluttarr/</span></span>
+<span class="line"><span>├── main.py           # Entry point</span></span>
+<span class="line"><span>├── src/              # Source code</span></span>
+<span class="line"><span>├── config/           # Config files</span></span>
+<span class="line"><span>├── .git/             # Version controlled</span></span>
+<span class="line"><span>├── pyproject.toml    # Python project definition</span></span>
+<span class="line"><span>└── venv/             # Python virtual environment</span></span>
+<span class="line"><span></span></span></code></pre>
+<h3 id="profilarr">Profilarr</h3>
+<p>Profilarr solves a real pain point: keeping quality profiles consistent across Radarr and Sonarr. If you’ve ever manually tweaked the same scoring rules in both apps, you know the frustration. Profilarr runs as two services, a SvelteKit frontend and a backend parser:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">profilarr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> ghcr.io/dictionarry-hub/profilarr:develop</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  environment</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">PARSER_HOST=profilarr-parser</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">PARSER_PORT=5000</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  depends_on</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">    profilarr-parser</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">      condition</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> service_healthy</span><span style="color:var(--astro-code-token-comment)">  # Waits for the parser to be ready</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  ports</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"6869:6868"</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">profilarr-parser</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> ghcr.io/dictionarry-hub/profilarr-parser:develop</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  expose</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"5000"</span><span style="color:var(--astro-code-token-comment)">   # Internal only, not mapped to host</span></span>
+<span class="line"></span></code></pre>
+<p>Like Decluttarr, the Profilarr directory on disk is a full git clone with SvelteKit, Deno, Vite, and TypeScript tooling, which suggests active local development or customization.</p>
+<h3 id="maintainerr">Maintainerr</h3>
+<p>Maintainerr handles library rules: delete movies not watched in 6 months, remove series that have been cancelled, and so on. It keeps the library from ballooning indefinitely.</p>
+<blockquote>
+<p>The combination of Decluttarr and Maintainerr means the server is largely self-maintaining. Downloads don’t pile up, the library stays curated, and disk space is managed without manual intervention.</p>
+</blockquote>
+<hr>
+<h2 id="the-challenges-what-actually-went-wrong">The challenges: what actually went wrong</h2>
+<h3 id="challenge-1-dns-bootstrapping-the-chicken-and-egg-problem">Challenge 1: DNS bootstrapping (the chicken and egg problem)</h3>
+<p>The <code>.lan</code> domain setup is elegant once it’s running. Getting there is not. The problem: to set AdGuard as your DNS server, you need to access AdGuard’s UI. But you can’t resolve <code>adguard.lan</code> until AdGuard is already your DNS.</p>
+<p>The solution is to access AdGuard by raw IP first (<code>http://[server-ip]:8080</code>), configure the DNS rewrites, then flip your router to use the server as the primary DNS. Only after that do the <code>.lan</code> domains start working.</p>
+<h3 id="challenge-2-network_mode-host-vs-bridge-networks">Challenge 2: <code>network_mode: host</code> vs bridge networks</h3>
+<p>AdGuard runs with <code>network_mode: host</code> for DNS access. Caddy runs in the <code>arr-net</code> bridge network. Getting Caddy to proxy to AdGuard required the <code>host.docker.internal:host-gateway</code> bridge, which is a Linux-specific Docker feature and does not work on macOS the same way.</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">caddy</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  extra_hosts</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"host.docker.internal:host-gateway"</span></span>
+<span class="line"></span></code></pre>
+<p>Without this, Caddy cannot reach AdGuard’s port 8080 on the host. It’s one of those “why isn’t this working” moments that costs an hour of debugging.</p>
+<h3 id="challenge-3-file-permissions-with-selinuxz-labels">Challenge 3: file permissions with SELinux/<code>:z</code> labels</h3>
+<p>Notice the <code>:z</code> at the end of every volume mount:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">  - </span><span style="color:var(--astro-code-token-string-expression)">/opt/bazarr/data:/config:z</span></span>
+<span class="line"></span></code></pre>
+<p>That <code>:z</code> tells Docker, on SELinux systems like Fedora/RHEL, to relabel the volume with a shared SELinux context. Without it, containers might silently fail to read or write their config files. The error messages are cryptic. This one cost a few restarts before I figured it out.</p>
+<h3 id="challenge-4-sonarr-lives-in-two-places">Challenge 4: Sonarr lives in two places</h3>
+<p>Sonarr is an interesting case. The <code>/opt/Sonarr</code> directory contains a full .NET binary installation packed with <code>System.*</code> DLLs, ASP.NET assemblies, and <code>ffprobe</code>. But the Docker stack uses the LinuxServer image and stores config at <code>/home/brito/.config/Sonarr</code>.</p>
+<p>This dual installation is a fossil from the native era. The native install is inert now, but it’s worth knowing it’s there so you don’t accidentally run two instances fighting over the same SQLite database.</p>
+<hr>
+<h2 id="jellyseerr-the-public-face">Jellyseerr: the public face</h2>
+<p>Of all the services, Jellyseerr is the one that non-technical users see. It’s mapped to <code>requester.lan</code> and provides a clean UI for requesting new content. Someone in the household wants to watch a specific show? They search for it on <code>requester.lan</code>, hit “Request,” and the pipeline kicks off automatically: Sonarr picks it up, Prowlarr finds a torrent, qBittorrent downloads it, and Jellyfin has it available within hours.</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">jellyseerr</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> fallenbagel/jellyseerr:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  environment</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">TZ=America/Sao_Paulo</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">PORT=5055</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/opt/jellyseerr/config:/app/config:z</span></span>
+<span class="line"></span></code></pre>
+<blockquote>
+<p>Jellyseerr is what makes the whole setup actually usable for everyone in the household. The pipeline is automated, so from a user’s perspective: search, click, watch.</p>
+</blockquote>
+<hr>
+<h2 id="portainer-because-sometimes-you-just-need-a-ui">Portainer: because sometimes you just need a UI</h2>
+<p>When you have 13 containers running and want to quickly check logs for one specific service, a web UI is faster than the command line. Portainer provides that.</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="yaml"><code><span class="line"><span style="color:var(--astro-code-token-keyword)">portainer</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  image</span><span style="color:var(--astro-code-token-keyword)">:</span><span style="color:var(--astro-code-token-string-expression)"> portainer/portainer-ce:latest</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  security_opt</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">label:disable</span><span style="color:var(--astro-code-token-comment)">     # Needed on SELinux systems</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  volumes</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/var/run/docker.sock:/var/run/docker.sock</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">/opt/portainer/data:/data:z</span></span>
+<span class="line"><span style="color:var(--astro-code-token-keyword)">  ports</span><span style="color:var(--astro-code-token-keyword)">:</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"9000:9000"</span></span>
+<span class="line"><span style="color:var(--astro-code-color-text)">    - </span><span style="color:var(--astro-code-token-string-expression)">"9443:9443"</span><span style="color:var(--astro-code-token-comment)">   # HTTPS</span></span>
+<span class="line"></span></code></pre>
+<p>The <code>security_opt: label:disable</code> is another SELinux nuance. By default, SELinux prevents containers from accessing <code>/var/run/docker.sock</code>. Disabling the label lets Portainer manage Docker as expected.</p>
+<hr>
+<h2 id="the-storage-reality">The storage reality</h2>
+<p>Everything media-related lives on a mounted Acer drive:</p>
+<pre class="astro-code css-variables" style="background-color:var(--astro-code-color-background);color:var(--astro-code-color-text); overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>/mnt/Acer/jvtri/Videos/Pirataria/</span></span>
+<span class="line"><span>├── Filmes/      # Movies library</span></span>
+<span class="line"><span>├── Series/      # TV shows library</span></span>
+<span class="line"><span>└── Downloads/   # Active downloads (torrent staging area)</span></span>
+<span class="line"><span></span></span></code></pre>
+<p>All service configs live on the SSD under <code>/opt/</code> (fast, reliable for config reads and writes), while the actual media files live on the external drive (slower, but capacity-oriented). This is a sensible split: SQLite databases and config files benefit from fast storage, while video files just need bulk capacity.</p>
+<hr>
+<h2 id="what-id-do-differently">What I’d do differently</h2>
+<p>After living with this setup, here’s what I’d change:</p>
+<ol>
+<li>
+<p><strong>Version-pin Docker images.</strong> Using <code>:latest</code> everywhere is convenient but can break things after an update. Pinning to a specific tag (e.g., <code>jellyfin/jellyfin:10.9.0</code>) gives you control over when you upgrade.</p>
+</li>
+<li>
+<p><strong>Add Watchtower or a manual update script.</strong> Since everything is <code>latest</code>, updates are ad-hoc. Watchtower can automate this, or a simple <code>docker compose pull &#x26;&#x26; docker compose up -d</code> in a cron job would do.</p>
+</li>
+<li>
+<p><strong>Consider Traefik instead of Caddy</strong> if you eventually want automatic Let’s Encrypt certs with external access. Caddy is simpler for pure local use, but Traefik integrates more deeply with Docker labels.</p>
+</li>
+<li>
+<p><strong>Clean up the native Sonarr install.</strong> Having both a native .NET install at <code>/opt/Sonarr</code> and a Docker container running is a footgun. Either go fully Docker or fully native, not both.</p>
+</li>
+</ol>
+<hr>
+<h2 id="final-thoughts">Final thoughts</h2>
+<p>Thirteen services, all talking to each other, serving a fully automated media pipeline with network-wide DNS ad blocking and clean local domain names. It takes a few weekends to get right, but once it’s running you mostly forget it’s there.</p>
+<p>The real lesson is not any single technology choice. It’s that automation beats repetition. Every manual step you eliminate, whether renaming files, fetching subtitles, or cleaning up stale downloads, is time you get back. The server runs, the media flows, the ads are blocked, and the family is happy.</p> </div> </article>  </main> <footer> <p>&copy; 2026 João Brito. Built with Astro.</p> <div class="footer-links"> <a href="https://github.com/jcorreiabrito" target="_blank" rel="noopener noreferrer" id="footer-github">GitHub</a> <span class="separator">•</span> <a href="https://www.linkedin.com/in/britojoao" target="_blank" rel="noopener noreferrer" id="footer-linkedin">LinkedIn</a> </div> </footer> </div> </body></html>
