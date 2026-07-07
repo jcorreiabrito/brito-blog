@@ -1,0 +1,35 @@
+---
+---
+<button id="theme-toggle" class="theme-btn" aria-label="Toggle theme">
+  <!-- Sun Icon (shown in dark mode) -->
+  <svg class="sun" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="4"></circle>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+  </svg>
+  
+  <!-- Moon Icon (shown in light mode) -->
+  <svg class="moon" viewBox="0 0 24 24">
+    <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+  </svg>
+</button>
+
+<script>
+  function setupThemeToggle() {
+    const toggleBtn = document.getElementById('theme-toggle');
+    if (!toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
+  }
+
+  // Setup on page load
+  setupThemeToggle();
+
+  // For SPA-like routing/swaps in Astro (in case view transitions are enabled later)
+  document.addEventListener('astro:after-swap', setupThemeToggle);
+</script>
