@@ -4,6 +4,10 @@ title: "Building Itinera: The Reality of Going Local First"
 pubDate: 2026-07-07
 description: "Offline-first application architecture is less about database choice and more about designing for conflict, security origin inheritance, and silent authentication proxying."
 author: "João Brito"
+tags:
+  - architecture
+  - local-first
+  - offline
 ---
 
 You are sitting in an airport terminal, your phone displays a single bar of unstable connection, and you are trying to retrieve your boarding pass or check your lodging address. The spinner rotates endlessly. In that moment, you realize that the modern software engineering consensus, which relies on continuous connectivity and external cloud services to render simple text, is a systemic design failure. We have traded basic reliability for developer convenience.

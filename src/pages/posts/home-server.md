@@ -4,6 +4,10 @@ title: "Building my home server: from native chaos to a dockerized media empire"
 pubDate: 2026-07-07
 description: "A self-hosted media stack is less about the content it serves and more about the containerization, networking, and automation patterns you are forced to get right."
 author: "João Brito"
+tags:
+  - self-hosting
+  - docker
+  - infrastructure
 ---
 
 There's a moment every tinkerer knows well. You're paying for three streaming services, still can't find what you want to watch, and you think: *"How hard can it be to just... host my own?"*

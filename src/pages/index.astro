@@ -8,6 +8,38 @@ const posts = await Astro.glob('./posts/*.md');
 const sortedPosts = posts.sort(
   (a, b) => new Date(b.frontmatter.pubDate).getTime() - new Date(a.frontmatter.pubDate).getTime()
 );
+
+// Collect all unique tags
+const allTags = Array.from(
+  new Set(sortedPosts.flatMap(post => post.frontmatter.tags || []))
+).sort();
+
+// Collect all unique month-year archive periods
+interface ArchiveDate {
+  key: string;
+  label: string;
+  year: number;
+  monthVal: number;
+  count: number;
+}
+
+const archiveDates = sortedPosts.reduce((acc: ArchiveDate[], post) => {
+  const date = new Date(post.frontmatter.pubDate);
+  const year = date.getFullYear();
+  const monthShort = date.toLocaleString('en-US', { month: 'short' });
+  const monthNum = String(date.getMonth() + 1).padStart(2, '0');
+  const key = `${year}-${monthNum}`;
+  const label = `${monthShort} ${year}`;
+  
+  const existing = acc.find(item => item.key === key);
+  if (existing) {
+    existing.count++;
+  } else {
+    acc.push({ key, label, year, monthVal: date.getMonth(), count: 1 });
+  }
+  return acc;
+}, [])
+.sort((a, b) => b.year - a.year || b.monthVal - a.monthVal);
 ---
 
 <Layout title="João Brito | Journal">
@@ -22,23 +54,91 @@ const sortedPosts = posts.sort(
   </section>
 
   <section>
-    <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 2rem; border-bottom: none; padding-bottom: 0;">
+    <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 1.5rem; border-bottom: none; padding-bottom: 0;">
       Articles
     </h2>
+    
+    <!-- Search Bar -->
+    <div class="search-wrapper">
+      <span class="search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+      <input 
+        type="text" 
+        id="search-input" 
+        class="search-input" 
+        placeholder="Search articles by title, description, or tags..." 
+        autocomplete="off"
+      />
+      <button id="search-clear-btn" class="search-clear" aria-label="Clear search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      {allTags.length > 0 && (
+        <div class="filter-group">
+          <span class="filter-label">Tags</span>
+          <div class="filter-options">
+            {allTags.map(tag => (
+              <button class="filter-btn filter-tag-btn" data-tag={tag} id={`filter-tag-${tag}`}>
+                #{tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {archiveDates.length > 0 && (
+        <div class="filter-group">
+          <span class="filter-label">Archives</span>
+          <div class="filter-options">
+            {archiveDates.map(date => (
+              <button class="filter-btn filter-date-btn" data-date={date.key} id={`filter-date-${date.key}`}>
+                {date.label} ({date.count})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+
+    <!-- Active Filters Indicator -->
+    <div id="active-filters-info" class="active-filters-info" style="display: none;">
+      <span>Active filters:</span>
+      <div id="active-badges-container" style="display: inline-flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+      <button id="clear-filters-link" style="background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0; margin-left: auto; text-decoration: underline;">
+        Clear all
+      </button>
+    </div>
     
     {sortedPosts.length === 0 ? (
       <p style="color: var(--text-secondary); font-style: italic;">No posts found. Start by adding markdown files to <code style="font-size: 0.85em; background-color: var(--bg-secondary); padding: 0.2rem 0.4rem; border-radius: 4px;">src/pages/posts/</code>.</p>
     ) : (
-      <ul class="post-list">
+      <ul class="post-list" id="post-list">
         {sortedPosts.map((post) => {
-          const formattedDate = new Date(post.frontmatter.pubDate).toLocaleDateString('en-US', {
+          const postDate = new Date(post.frontmatter.pubDate);
+          const formattedDate = postDate.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
           });
+          const dateKey = `${postDate.getFullYear()}-${String(postDate.getMonth() + 1).padStart(2, '0')}`;
+          const tagsJson = JSON.stringify(post.frontmatter.tags || []);
           
           return (
-            <li class="post-item">
+            <li class="post-item"
+                data-title={post.frontmatter.title.toLowerCase()}
+                data-description={(post.frontmatter.description || '').toLowerCase()}
+                data-tags={tagsJson.toLowerCase()}
+                data-date={dateKey}>
               <span class="post-meta">{formattedDate}</span>
               <h3 class="post-title">
                 <a href={post.url}>{post.frontmatter.title}</a>
@@ -46,10 +146,293 @@ const sortedPosts = posts.sort(
               {post.frontmatter.description && (
                 <p class="post-description">{post.frontmatter.description}</p>
               )}
+              {post.frontmatter.tags && post.frontmatter.tags.length > 0 && (
+                <div class="post-item-tags">
+                  {post.frontmatter.tags.map((tag: string) => (
+                    <a href={`/?tag=${encodeURIComponent(tag)}`} class="post-tag-link" data-tag={tag}>
+                      #{tag}
+                    </a>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}
       </ul>
     )}
+
+    <!-- No Results Message -->
+    <div id="no-results" class="no-results-msg" style="display: none;">
+      <h3 class="no-results-title">No articles found</h3>
+      <p>Try adjusting your search keywords or resetting the filters.</p>
+      <button id="reset-filters-btn" class="clear-all-btn">Reset filters</button>
+    </div>
   </section>
 </Layout>
+
+<script>
+  // Ensure JS only runs after DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search-input');
+    const searchClearBtn = document.getElementById('search-clear-btn');
+    const tagButtons = document.querySelectorAll('.filter-tag-btn');
+    const dateButtons = document.querySelectorAll('.filter-date-btn');
+    const postItems = document.querySelectorAll('.post-item');
+    const noResults = document.getElementById('no-results');
+    const resetFiltersBtn = document.getElementById('reset-filters-btn');
+    const activeFiltersInfo = document.getElementById('active-filters-info');
+    const activeBadgesContainer = document.getElementById('active-badges-container');
+    const clearFiltersLink = document.getElementById('clear-filters-link');
+    const postTagLinks = document.querySelectorAll('.post-tag-link');
+
+    // State variables
+    let currentQuery = '';
+    let activeTag = '';
+    let activeDate = '';
+
+    // Initialize state from URL query parameters
+    function initFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      currentQuery = params.get('q') || '';
+      activeTag = params.get('tag') || '';
+      activeDate = params.get('date') || '';
+
+      if (searchInput) {
+        searchInput.value = currentQuery;
+      }
+      if (searchClearBtn) {
+        searchClearBtn.style.display = currentQuery ? 'flex' : 'none';
+      }
+
+      updateButtonStates();
+      filterPosts();
+    }
+
+    // Update active CSS classes on filter buttons
+    function updateButtonStates() {
+      tagButtons.forEach(btn => {
+        const tag = btn.getAttribute('data-tag');
+        if (tag === activeTag) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      dateButtons.forEach(btn => {
+        const date = btn.getAttribute('data-date');
+        if (date === activeDate) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    // Update URL query parameters dynamically
+    function updateUrl() {
+      const params = new URLSearchParams();
+      if (currentQuery) params.set('q', currentQuery);
+      if (activeTag) params.set('tag', activeTag);
+      if (activeDate) params.set('date', activeDate);
+
+      const newRelativePathQuery = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+      window.history.replaceState(null, '', newRelativePathQuery);
+    }
+
+    // Update the Active Filters Info indicator panel
+    function updateActiveFiltersIndicator() {
+      if (!activeBadgesContainer || !activeFiltersInfo) return;
+      
+      activeBadgesContainer.innerHTML = '';
+      
+      const hasFilters = currentQuery || activeTag || activeDate;
+      
+      if (!hasFilters) {
+        activeFiltersInfo.style.display = 'none';
+        return;
+      }
+
+      activeFiltersInfo.style.display = 'flex';
+
+      if (currentQuery) {
+        createBadge(`Search: "${currentQuery}"`, () => {
+          currentQuery = '';
+          if (searchInput) searchInput.value = '';
+          if (searchClearBtn) searchClearBtn.style.display = 'none';
+          onFilterChange();
+        });
+      }
+
+      if (activeTag) {
+        createBadge(`#${activeTag}`, () => {
+          activeTag = '';
+          onFilterChange();
+        });
+      }
+
+      if (activeDate) {
+        const btn = document.querySelector(`.filter-date-btn[data-date="${activeDate}"]`);
+        const dateLabel = btn ? btn.textContent.replace(/\s*\(\d+\)/, '').trim() : activeDate;
+        createBadge(`Date: ${dateLabel}`, () => {
+          activeDate = '';
+          onFilterChange();
+        });
+      }
+    }
+
+    // Helper to build active badge elements
+    function createBadge(text, onRemove) {
+      if (!activeBadgesContainer) return;
+      const badge = document.createElement('div');
+      badge.className = 'active-filter-badge';
+      badge.innerHTML = `
+        <span>${text}</span>
+        <button type="button" aria-label="Remove filter">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      `;
+      badge.querySelector('button').addEventListener('click', onRemove);
+      activeBadgesContainer.appendChild(badge);
+    }
+
+    // Core filtering logic
+    function filterPosts() {
+      let visibleCount = 0;
+      const queryWords = currentQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+
+      postItems.forEach(item => {
+        const title = item.getAttribute('data-title') || '';
+        const description = item.getAttribute('data-description') || '';
+        const tagsStr = item.getAttribute('data-tags') || '[]';
+        const date = item.getAttribute('data-date') || '';
+        
+        let tags = [];
+        try {
+          tags = JSON.parse(tagsStr);
+        } catch (e) {}
+
+        // Check text query (must contain all typed words)
+        let matchesQuery = true;
+        if (queryWords.length > 0) {
+          matchesQuery = queryWords.every(word => {
+            return title.includes(word) || 
+                   description.includes(word) || 
+                   tags.some(t => t.toLowerCase().includes(word));
+          });
+        }
+
+        // Check active tag filter
+        let matchesTag = true;
+        if (activeTag) {
+          matchesTag = tags.includes(activeTag.toLowerCase());
+        }
+
+        // Check active date filter
+        let matchesDate = true;
+        if (activeDate) {
+          matchesDate = date === activeDate;
+        }
+
+        // Show/hide post item
+        if (matchesQuery && matchesTag && matchesDate) {
+          item.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+
+      // Show/hide "No Results" message
+      if (noResults) {
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+      }
+
+      updateActiveFiltersIndicator();
+    }
+
+    function onFilterChange() {
+      updateButtonStates();
+      updateUrl();
+      filterPosts();
+    }
+
+    // Set up Event Listeners
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        currentQuery = searchInput.value;
+        if (searchClearBtn) {
+          searchClearBtn.style.display = currentQuery ? 'flex' : 'none';
+        }
+        onFilterChange();
+      });
+    }
+
+    if (searchClearBtn) {
+      searchClearBtn.addEventListener('click', () => {
+        currentQuery = '';
+        if (searchInput) {
+          searchInput.value = '';
+          searchInput.focus();
+        }
+        searchClearBtn.style.display = 'none';
+        onFilterChange();
+      });
+    }
+
+    // Tag buttons clicks
+    tagButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tag = btn.getAttribute('data-tag') || '';
+        activeTag = activeTag === tag ? '' : tag;
+        onFilterChange();
+      });
+    });
+
+    // Date buttons clicks
+    dateButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const date = btn.getAttribute('data-date') || '';
+        activeDate = activeDate === date ? '' : date;
+        onFilterChange();
+      });
+    });
+
+    // Reset callbacks
+    const clearAll = () => {
+      currentQuery = '';
+      activeTag = '';
+      activeDate = '';
+      if (searchInput) searchInput.value = '';
+      if (searchClearBtn) searchClearBtn.style.display = 'none';
+      onFilterChange();
+    };
+
+    if (clearFiltersLink) clearFiltersLink.addEventListener('click', clearAll);
+    if (resetFiltersBtn) resetFiltersBtn.addEventListener('click', clearAll);
+
+    // Intercept inline tags clicks on home listing to avoid page reload and update state
+    postTagLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tag = link.getAttribute('data-tag') || '';
+        activeTag = tag;
+        if (searchInput) {
+          window.scrollTo({ top: searchInput.offsetTop - 40, behavior: 'smooth' });
+        }
+        onFilterChange();
+      });
+    });
+
+    // Initial load run
+    initFromUrl();
+
+    // Listen to popstate for history navigation (forward/back button support)
+    window.addEventListener('popstate', () => {
+      initFromUrl();
+    });
+  });
+</script>

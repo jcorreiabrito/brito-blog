@@ -4,6 +4,10 @@ title: "Standardizing Code Style Across Multi-Project Environments"
 pubDate: 2026-07-07
 description: "Why automated style enforcement is an architectural decision, not a preference, and how shifting formatting checks left changes the engineering culture around code review."
 author: "João Brito"
+tags:
+  - engineering-standards
+  - dx
+  - automation
 ---
 
 There's a moment every engineering team hits eventually. Someone opens a pull request on a service they don't usually touch, and before anyone gets to the logic, the review thread fills up with comments about indentation, import ordering, and whether a particular block really needs those braces. The actual change, including the architectural decision, the edge case being handled, and the invariant being enforced, gets buried. That moment is a signal, not an accident. It means your team is spending cognitive budget on things that a machine could resolve deterministically.
