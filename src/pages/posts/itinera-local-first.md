@@ -10,7 +10,6 @@ You are sitting in an airport terminal, your phone displays a single bar of unst
 
 This friction led me to build Itinera, a self-hosted, offline-first trip planner. But moving away from the standard client-server request-response lifecycle to a local-first model is not a simple swap of libraries. It exposes fundamental architectural questions about data replication, browser security boundaries, and conflict resolution that most application developers never have to consider.
 
----
 
 ## The Stack
 
@@ -22,7 +21,6 @@ The server side is intentionally lean. **CouchDB** is the source of truth. A **F
 
 In front of everything sits **Caddy**, acting as the unified edge: static file serving, reverse proxy for `/api/*` traffic to FastAPI, and the authentication injection point for `/db/*` replication traffic. TLS is automatic via Let's Encrypt.
 
----
 
 ## The Sync Illusion
 
@@ -43,7 +41,6 @@ function resolveRemoteUrl(url: string): string {
 
 This is one of those small decisions that saves enormous pain later. Because the remote URL resolves from `window.location.origin`, the same build works identically on `localhost:5173`, a Tailscale IP, a home server on the LAN, or a public domain. No rebuild, no environment-specific config. The replication feed runs with `{ live: true, retry: true }`, so reconnection after a network drop is completely automatic.
 
----
 
 ## The Silent Authentication Gate
 
@@ -59,7 +56,6 @@ export function createRemoteDb(): Database {
 
 The failure mode worth knowing: if Caddy's upstream URL or credentials drift out of sync with what CouchDB expects, replication fails silently from the client's perspective. The sync status store surfaces this as an `error` state, but detecting *why* it failed requires checking the FastAPI health endpoint, which has a direct line to CouchDB and fails loudly when it cannot reach it.
 
----
 
 ## The ULID ID Scheme: Range Scans Without Indexes
 
@@ -84,7 +80,6 @@ function prefixRange(prefix: string): KeyRange {
 
 Where `HIGH_KEY` is `\ufff0`, the Unicode high surrogate that sorts after any normal character. This pattern fetches an entire category of documents for a trip in a single `allDocs` call with no secondary index. It also keeps the same ID scheme on both the client (PouchDB) and the server (FastAPI/CouchDB), so neither side needs ID translation logic.
 
----
 
 ## Origin Safety and Executable Attachments
 
@@ -106,7 +101,6 @@ export function safeViewMime(mime: string): string {
 
 The stored bytes and the original MIME are never modified. Only the view type changes. This means the data is always recoverable, and the security boundary is enforced purely at render time.
 
----
 
 ## The Conflict Reality
 
@@ -133,7 +127,6 @@ After picking the winner, the losing revision's content is snapshotted into a de
 
 Clearing the branch is the part most implementations skip. Without it, CouchDB continues reporting the document as conflicted, triggering the resolution logic again on every sync. The delete is what breaks the cycle.
 
----
 
 ## What We Actually Own
 

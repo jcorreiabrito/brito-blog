@@ -10,7 +10,6 @@ There's a moment every engineering team hits eventually. Someone opens a pull re
 
 This is the real cost of style divergence in multi-repository environments. It's not about aesthetics.
 
----
 
 ## The Compounding Problem of Repository Autonomy
 
@@ -20,7 +19,6 @@ Over time, repositories develop what I'd call a stylistic footprint: a set of pa
 
 The naive fix is a style guide document. It doesn't work. Documents are not executable. They rot the moment someone's IDE disagrees with them, and they generate exactly the kind of interpersonal friction in code review that you were trying to avoid.
 
----
 
 ## Shifting Left: What It Actually Means
 
@@ -32,7 +30,6 @@ When integrated through `maven-checkstyle-plugin` and bound to the `validate` ph
 
 The rule definitions themselves live in a `checkstyle.xml` configuration file, typically versioned in a shared parent POM or a dedicated internal tooling repository. Keeping them in version control is non-negotiable. It makes the style contract auditable, diffable, and subject to the same review process as any other engineering decision. When a rule changes, there's a commit for it. There's a reason for it. That's accountability.
 
----
 
 ## The Gap Between Build and Editor
 
@@ -42,7 +39,6 @@ The solution is to version the IntelliJ code style scheme alongside the rest of 
 
 This is a surprisingly underused pattern. Most teams either don't commit their `.idea/` directory at all, or they commit it without curating which parts are machine-specific and which are team-wide standards. The code style scheme is firmly in the latter category. It should be in source control. It should be reviewed when it changes. It is, functionally, part of the project's build contract.
 
----
 
 ## Pre-Commit Hooks as the Last Local Gate
 
@@ -50,7 +46,6 @@ Even with a properly configured build plugin and synchronized editor settings, t
 
 The hook lives at `.git/hooks/pre-commit` and must be made executable. The obvious limitation is that `.git/` is not versioned. This means the hook has to be bootstrapped on each developer machine, which is a manual step and a point of failure. The standard mitigation is to use a hook management tool like Husky (for JavaScript-adjacent toolchains) or a simple setup script that is documented and enforced through onboarding. The bootstrapping problem doesn't invalidate the approach; it's a resolvable operational concern, not a design flaw.
 
----
 
 ## What You're Actually Optimizing For
 
